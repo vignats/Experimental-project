@@ -7,11 +7,16 @@ Created on Wed Oct  4 10:58:04 2023
 
 import matplotlib as plt
 
-import pandas as pd 
+
 import numpy as np 
+import csv
 # read excel in data frame 
-df = pd.read_excel(r'2023-10-03_dataset/03-Oct-2023_patAnalysis_2.xlsx') 
- 
-# convert a data frame to a Numpy 2D array 
-np.asarray(df) 
-X, y = data[:, 0], data[:, 1]
+file = open('03-Oct-2023_patAnalysis_2.csv',"r")
+data = csv.reader(file, delimiter = ",")
+data = np.array(list(data))
+for i in range(2343):
+    for j in range(8):
+        if data[i][j]== '' :
+            data[i][j]=0
+X = data[1:, 1:4].astype(float)
+y = data[1: , 5].astype(float)
