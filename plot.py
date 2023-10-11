@@ -5,14 +5,23 @@ Created on Wed Oct  4 11:48:59 2023
 @author: salome
 """
 import matplotlib.pyplot as plt
+
 import pandas as pd 
 
 ## Read excel in data frame 
 df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
+=======
+
+import pandas as pd 
+import numpy as np 
+## Read excel in data frame 
+df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv') 
+
 
 ## Data analysis
 time = df['wrist@(9mm,809nm)_delay_s']
 bp_systolic = df['blood pressure_systolic']
+
 
 # Plot 
 plt.figure(1)
@@ -49,12 +58,30 @@ def plot_periode(function, window, name):
     plt.ylabel(f'{name} of the BP')
     plt.title(f'{name} of the BP with window = {window}')
 
+=======
+pat_raw = df['wrist@(9mm,809nm)_raw_pat']
+pat_filtred = df['wrist@(9mm,809nm)_filtered_pat_bottomTI']
+
+# Plot 
+plt.figure(1)
+plt.plot(time, bp_systolic)
+plt.title('BP')
+plt.figure(2)
+plt.plot(time, pat_filtred)
+plt.title('PAT filtred')
+plt.figure(3)
+plt.plot(time, pat_raw)
+plt.title('PAT raw')
+plt.show()
+
+
 ## Mean and standard deviation
 # Global mean and standard deviation
 mean = df.mean()
 std = df.std()
 
 # Moving mean and standard deviation
+
 window = 150
 window_derivation = 150
 moving_mean = bp_systolic.rolling(window).mean()
@@ -71,6 +98,16 @@ plot_periode(bp_systolic.rolling(window).std(), window, 'Moving standard deviati
 plt.figure(3)
 plot_periode(derivated, window, 'Derivation of the moving mean')
 
+
+=======
+window = 200
+plt.figure(4)
+bp_systolic.rolling(window).mean().plot(style='k')
+plt.title('Moving mean')
+
+plt.figure(5)
+bp_systolic.rolling(window).std().plot(style='k')
+plt.title('Moving std')
 
 
 
