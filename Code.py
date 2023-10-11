@@ -18,17 +18,32 @@ bp_systolic_mean = df['blood pressure_mean']
 pat_raw = df['wrist@(9mm,809nm)_raw_pat']
 pat_filtred = df['wrist@(9mm,809nm)_filtered_pat_bottomTI']
 
+##Periods separation
+def trace() :
+    plt.axvline(x=716, color='r')
+    plt.axvline(x=1002, color='r')
+    plt.axvline(x=1145, color='r')
+    plt.axvline(x=1469, color='r')
+    plt.axvline(x=1599, color='r')
+    plt.axvline(x=1890, color='r')
+
 # Plot 
 plt.figure(1)
 plt.plot(bp_systolic)
+trace()
 '''
 plt.plot(time, bp_systolic_mean)
 plt.title('BP')
+'''
+pat_new = pat_filtred.fillna(method='ffill')
 plt.figure(2)
-plt.plot(time, pat_filtred)
+plt.plot(time, pat_new)
+#plt.xlim(0,2000)
+plt.ylim(0, 2.2)
 plt.title('PAT filtred')
+
 plt.figure(3)
-plt.plot(time, pat_raw)
+plt.plot(pat_filtred, bp_systolic)
 plt.title('PAT raw')
 plt.show()
 '''
@@ -40,28 +55,15 @@ std = df.std()
 # Moving mean and standard deviation
 window = 150
 window_derivative = 150
-plt.axvline(x=716, color='r')
-plt.axvline(x=1002, color='r')
-plt.axvline(x=1145, color='r')
-plt.axvline(x=1469, color='r')
-plt.axvline(x=1599, color='r')
-plt.axvline(x=1890, color='r')
+
 plt.figure(4)
 rolling_mean = bp_systolic.rolling(window).mean()
-#rolling_mean_norm= rolling_mean[623:2325]
 plt.plot(rolling_mean)
-#plt.xlim([0, (2325-623)])
 plt.grid(True)
-plt.axvline(x=716, color='r')
-plt.axvline(x=1002, color='r')
-plt.axvline(x=1002, color='r')
-plt.axvline(x=1145, color='r')
-plt.axvline(x=1469, color='r')
-plt.axvline(x=1599, color='r')
-plt.axvline(x=1890, color='r')
-#plt.xticks([0,3.142,6.283,9.425], [0,'π','2π','3π'], color='r')
+trace()
 plt.title('Moving mean')
 
+#Derivative
 a = rolling_mean.size-1
 df['Derivative']=pd.Series() 
 for i in range (0,a-window_derivative):
@@ -71,66 +73,7 @@ Derivee = df['Derivative']
 
 plt.figure(5)
 plt.plot(Derivee)
-plt.axvline(x=1002, color='r')
-plt.axvline(x=1145, color='r')
-plt.axvline(x=1469, color='r')
-plt.axvline(x=1599, color='r')
-plt.axvline(x=716, color='r')
-plt.axvline(x=1890, color='r')
-
-plt.figure(6)
-plt.plot(pat_filtred)
-plt.axvline(x=716, color='r')
-plt.axvline(x=1002, color='r')
-plt.axvline(x=1002, color='r')
-plt.axvline(x=1145, color='r')
-plt.axvline(x=1469, color='r')
-plt.axvline(x=1599, color='r')
-plt.axvline(x=1890, color='r')
-
+trace()
 '''
-#Series separation 
-
-time_at_rest = time[50:323]
-
-time_shift = []
-
-for i in range (0,323-50) :
-    time_shift.append(time_at_rest.iloc[i] + 10)
-
-    
-bp_systolic_at_rest = bp_systolic_mean[50:323]
-pat_at_rest = pat_filtred[50:323]
-
-pat_at_rest_shift = []
-for i in range(0,323-60) :
-    pat_at_rest_shift.append(pat_at_rest.iloc[i+10])
 
 
-time_med_effort = time[324:717]
-time_big_effort = time[718]
-
-window = 150
-
-
-plt.figure(4)
-plt.plot(time_at_rest,bp_systolic_at_rest)
-
-plt.figure(5)
-plt.plot(time_at_rest[10:273],pat_at_rest_shift)
-
-plt.figure(6)
-plt.plot(pat_at_rest,bp_systolic_at_rest)
-
-plt.figure(7)
-plt.plot(pat_at_rest_shift,bp_systolic_at_rest[10:273])
-
-plt.figure(5)
-pat_at_rest.rolling(window).mean().plot(style='k')
-plt.title('Moving mean')
-
-bp_s = bp_systolic_at_rest.fillna(0)
-auto_correl = np.correlate(bp_s.array,bp_s.array, mode = 'same')
-plt.figure(8)
-plt.plot(auto_correl)
-'''
