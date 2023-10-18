@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.svm import SVR
+from sklearn.model_selection import cross_val_score
 
 def interpol(df, name_col):
    time = df['wrist@(9mm,809nm)_delay_s']
@@ -36,3 +38,23 @@ if __name__ == '__main__' :
  X_Stationnary = Diff[23:2325]
  X_raw = mat[23:2325]
  y = df['blood pressure_systolic'].dropna().to_numpy()
+ 
+ #Modelling phase :
+Xtrain, Xtest, Ytrain, Ytest = train_test_split(X_Stationnary, y, train_size=0.7)
+Xtrain = Xtrain.reshape(-1, 1)
+Xtest = Xtest.reshape(-1, 1)
+Scaler = StandardScaler()
+Xtrain_scale = Scaler.fit_transform(Xtrain)
+Xtest_scale = Scaler.transform(Xtest)
+regr = MLPRegressor( max_iter=100000)
+SV = SVR(kernel='linear')
+SV2 = SVR(kernel='rbf')
+SV.fit(Xtrain,Ytrain)
+regr.fit(Xtrain_scale, Ytrain)
+SV2.fit(Xtrain_scale, Ytrain)
+
+Ytest_pred = regr.predict(Xtest_scale)
+Ytest_pred_scale = SV2.predict(Xtest_scale)
+
+print("Normal data", mean_squared_error(Ytest, Ytest_pred), "R2 score : ", r2_score(Ytest, Ytest_pred))
+print("Scaled data", mean_squared_error(Ytest, Ytest_pred_scale), "R2 score : ", r2_score(Ytest, Ytest_pred_scale))
