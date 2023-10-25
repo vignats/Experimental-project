@@ -5,6 +5,7 @@ Created on Wed Oct 11 15:22:25 2023
 @author: salome
 """
 from scipy.interpolate import interp1d
+import pandas as pd
 
 ## Read excel in data frame 
 df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
