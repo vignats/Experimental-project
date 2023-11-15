@@ -4,8 +4,6 @@ Created on Wed Oct 11 15:22:25 2023
 
 @author: salome
 """
-import matplotlib.pyplot as plt
-import pandas as pd 
 from scipy.interpolate import interp1d
 import scipy as sp
 import scipy.fftpack
