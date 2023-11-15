@@ -41,21 +41,24 @@ PAT = 1/PAT_inversed
 ## Train a model
 X = pd.Series(PAT).values.reshape(-1, 1)
 Y = pd.Series(BP).values.reshape(-1, 1)
+
+'''
 X_train,X_test, Y_train, Y_test = train_test_split(X,Y,test_size = 0.2)
+
 model = LinearRegression()
 model.fit(X_train, Y_train)
 y_pred = model.predict(X_test)
 print(model.score(X_test, Y_test))
 print (mean_squared_error(Y_test, y_pred, squared=False))
 
-
+plt.scatter(X_test, Y_test, color='black')
+plt.plot(X_test, y_pred, color = 'blue')
 ## Use Kfold
 from sklearn.model_selection import KFold
 scores=[]
 abss =0
 curve = []
 
-'''
 for N in range (2,20,2): 
 
     kFold=KFold(n_splits=N)
@@ -73,7 +76,7 @@ for index, accuracy in enumerate (scores):
     if accuracy == max(scores) :
        print(index/5) 
     
-'''
+
 abss =0
 curve = []
 kFold=KFold(n_splits=5)
@@ -85,3 +88,22 @@ for train_index,test_index in kFold.split(X):
     abss+=1
     curve.append(abss)
 plt.scatter(curve, scores)
+'''
+from sklearn.preprocessing import PolynomialFeatures
+poly_reg=PolynomialFeatures(degree=2)
+X_poly=poly_reg.fit_transform(X)
+
+X_train,X_test, Y_train, Y_test = train_test_split(X_poly,Y,test_size = 0.3, random_state =42)
+
+lin_reg2=LinearRegression()
+lin_reg2.fit(X_train,Y_train)
+
+y_pred = lin_reg2.predict(X_test)
+print(lin_reg2.score(X_test, Y_test))
+print (mean_squared_error(Y_test, y_pred, squared=False))
+
+plt.plot(X_test, Y_test, color='black')
+plt.plot(X_test, y_pred, color = 'blue')
+
+plt.figure(2)
+plt.plot(X_train, Y_train, color='black')
