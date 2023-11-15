@@ -14,7 +14,6 @@ df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
 time = df['wrist@(9mm,809nm)_delay_s']
 bp_systolic = df['blood pressure_systolic']
 
-
 # Plot 
 plt.figure(1)
 plt.subplot(3,1,1)
