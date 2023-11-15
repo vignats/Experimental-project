@@ -11,15 +11,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn import svm
 
-from interpolation import interpolation
+from utiles import process_data
 
-# Data extraction
-df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv') 
-df = df.dropna(subset=['blood pressure_systolic'])
-df = interpolation(df)
 
-X, y = df['pat_filtred_continuous'].to_numpy().reshape(-1, 1), df['blood pressure_systolic'].to_numpy().reshape(-1, 1)
-
+X, y = process_data('03-Oct-2023_patAnalysis_2.csv')
 # DATASET SPLTING
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 42)
