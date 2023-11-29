@@ -6,94 +6,229 @@ Created on Wed Nov 15 13:21:13 2023
 """
 
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+from scipy import stats
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
-from sklearn.metrics import mean_squared_error
+from sklearn.neural_network import MLPRegressor
+from sklearn.metrics import mean_squared_error, r2_score
 
 class Preprocess():
     def __init__(self, path):
         self.df = pd.read_csv(path)
-        self.df = self.df.dropna(subset=['wrist@(9mm,809nm)_filtered_pat_bottomTI'])
         self.df = self.df.dropna(subset=['blood pressure_systolic'])
                 
     def interpol(self):
-       time = self.df['wrist@(9mm,809nm)_delay_s']
-       interp_func = interp1d(self.df['wrist@(9mm,809nm)_delay_s'].array, self.df['wrist@(9mm,809nm)_filtered_pat_bottomTI'].array, kind='linear', fill_value="extrapolate")
-       continuous_values = interp_func(time)
-
-       self.df.insert(loc=3, column='pat_filtred_continuous', value=continuous_values)       
-              
-    def process_data(self, interpolation, invert, normalize):
+        time_continuous = self.df['wrist@(9mm,809nm)_delay_s']
+        time_not_continuous = self.df.loc[self.df['wrist@(9mm,809nm)_filtered_pat_bottomTI'].notna(), 'wrist@(9mm,809nm)_delay_s']
+       
+        interp_func = interp1d(time_not_continuous.array, self.df.loc[self.df['wrist@(9mm,809nm)_filtered_pat_bottomTI'].notna(), 'wrist@(9mm,809nm)_filtered_pat_bottomTI'].array, kind='linear', fill_value="extrapolate")
+        continuous_values = interp_func(time_continuous)
+       
+        self.df.insert(loc=3, column='pat_filtred_continuous', value=continuous_values)       
+    
+    def outliers(self):
+        # Identify outliers of column by computing z-score
+        z = np.abs(stats.zscore(self.df['wrist@(9mm,809nm)_filtered_pat_bottomTI']))
+        
+        # Identify outliers as pat_filtered with a z-score greater than 3
+        threshold = 3
+        outliers = self.df['wrist@(9mm,809nm)_filtered_pat_bottomTI'][z > threshold]
+        
+        # Remove outliers
+        self.df = self.df.drop(outliers.index)
+          
+    def process_data(self, interpolation, invert, outlier):
         """"
         Process the data with multiple possibilities
-        interpolation = True or False
+        interpolation : interpolate the missing PAT data using scipy function
+        invert : the correlation between PAT and BP is negative so we invert the PAT
+        normalize : normalization of the PAT data 
         """
+        
+        if outlier == True :
+            self.outliers()
+            
         if interpolation == True : 
             self.interpol()
+        else :
+            self.df.dropna(subset=['wrist@(9mm,809nm)_filtered_pat_bottomTI'])
         
         X, y = self.df.iloc[:, 3].to_numpy().reshape(-1, 1), self.df['blood pressure_systolic'].to_numpy().reshape(-1, 1)
-
+        
         if invert == True:  
             X = 1/X
-            
-        if normalize == True : 
-            scaler = StandardScaler()
-            X = scaler.fit_transform(X)
-              
+    
         return X, y
+    
 
 class Model():
-    def __init__(self, path, interpolation = True, invert = True, normalize = True):
+    def __init__(self, path, mod, interpolation = True, invert = True, outlier = True, normalize = True):
         """
 
         Parameters
         ----------
         path : access to the data, need to be in the same file.
-
+        mod : Used model od deep learning.
+        interpolation : interpolate the missing PAT data using scipy function
+            default is True
+        invert : the correlation between PAT and BP is negative so we invert the PAT
+            default is True
+        normalize : normalization of the PAT data 
+            default is True
+            
         """
-        self.interpolation = interpolation 
-        self.invert = invert
+        self.mod = mod
         self.normalize = normalize
 
-        self.X, self.y = Preprocess(path).process_data(interpolation, invert, normalize)
+        self.X, self.y = Preprocess(path).process_data(interpolation, invert, outlier)
+    
+    def normalization(self, X_train, X_test):
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+              
+        return X_train, X_test
         
-        #self.model = model
-     
     def data_splitting(self, test_size = 0.3, random_state = 42):
-        X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size = test_size, random_state = random_state)
+        if isinstance(self.mod, PolynomialFeatures):
+            self.X = self.mod.fit_transform(self.X)
+            self.mod = LinearRegression() #After adding polynomial feature, the prediction is done using a linear regressor.
+            
+        X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, 
+                            test_size = test_size, random_state = random_state)
+        
+        if self.normalize == True :
+            X_train, X_test = self.normalization(X_train, X_test)
+        
         return X_train, X_test, y_train, y_test
         
-    def linear_regression(self, split_type = 'classical', n_splits=6):
+    def n_split(self):
+        rmse_n = []
+        for n in range (2,20):
+            rmse_n.append(self.accuracy(split_type = 'tscv', n_splits=n)[0])
+        return rmse_n.index(min(rmse_n))       
+
+    def accuracy(self, split_type = 'classical', n_splits=4):
+        """
+        Parameters
+        ----------
+        split_type : Type of cross validation used, optional
+            -- The default is 'classical', corresponding to one training set 
+            containg 70% of the data and one test set containing 30%. 
+            -- 'tscv' : time series cross-validation.
+            
+        n_splits : int, optional
+            Number of folds, training set, when using tscv. The default is 6.
+
+        Returns
+        -------
+        rmse
+            Root mean square error between the predicted value and the real value. 
+            In the case of tscv it is the max rmse over all the folds.
+        r2
+            R^2 
+
+        """
         if split_type == 'classical':
             X_train, X_test, y_train, y_test = self.data_splitting()
             
-            reg = LinearRegression()
-            reg.fit(X_train, y_train)
+            self.mod.fit(X_train, y_train)
             
-            y_pred = reg.predict(X_test)
-            return mean_squared_error(y_test, y_pred, squared = False)
+            y_pred = self.mod.predict(X_test)
+            return mean_squared_error(y_test, y_pred, squared = False), r2_score(y_test, y_pred)
         
         if split_type == 'tscv':
             tscv = TimeSeriesSplit(n_splits)
-            rmse = []
+            rmse = []          
             for train_index, test_index in tscv.split(self.X, self.y):
+                if isinstance(self.mod, PolynomialFeatures):
+                    self.X = self.mod.fit_transform(self.X)
+                    self.mod = LinearRegression() #After adding polynomial feature, the prediction is done using a linear regressor.
+                    
                 X_train, X_test = self.X[train_index], self.X[test_index]
                 y_train, y_test = self.y[train_index], self.y[test_index]
                 
-                reg = LinearRegression()
-                reg.fit(X_train, y_train)
+                if self.normalize == True :
+                    X_train, X_test = self.normalization(X_train, X_test)
                 
-                y_pred = reg.predict(X_test)
+                self.mod.fit(X_train, y_train)
+                
+                y_pred = self.mod.predict(X_test)
                 rmse.append(mean_squared_error(y_test, y_pred, squared = False))
-                return max(rmse)
+            return min(rmse), r2_score(y_test, y_pred)
 
-model = Model('03-Oct-2023_patAnalysis_2.csv')     
-rmse = model.linear_regression(split_type = 'tscv')  
-        
-        
-                
-        
-        
+
+normalize = invert = [False, True]
+split_type = ['classical', 'tscv']
+acc = pd.DataFrame(columns=['Cross validation', 'Normalize', 'Invert', 'RMSE', 'R2'])
+
+model = LinearRegression() 
+for split in split_type :
+    for norm in normalize :
+        for inv in invert : 
+            select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, 
+                                 invert = inv,
+                                 normalize = norm)
+            rmse, r2= select_model.accuracy(split_type = split)
+            
+            acc = acc.append({'Cross validation' : split,
+                                    'Normalize': norm,
+                                    'Invert': inv,
+                                    'RMSE': rmse,
+                                    'R2' : r2}, ignore_index=True)
+            
+acc.to_excel("accuracy.xlsx")
+         
+"""
+## Linear regression 
+
+model = LinearRegression()               
+
+## Polynomial regression
+model = PolynomialFeatures(degree=3, include_bias=False)  
+
+## Normalization
+select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, interpolation = False, 
+                     invert = False)
+
+## Interpolation
+select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, invert = False, 
+                     normalize = False)
+## Invert 
+select_model = Model('03-Oct-2023_patAnalysis_2.csv', model,interpolation = False,
+                     normalize = False)
+
+## All     
+select_model = Model('03-Oct-2023_patAnalysis_2.csv')
+
+ 
+rmse, r2 = select_model.accuracy() 
+"""
+
+"""
+## Number of features in Polynomial regression
+rmse_min = []
+for d in range (2,7):    
+    model =  PolynomialFeatures(degree=d, include_bias=False)      
+    select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, interpolation = False, 
+            invert = False, normalize = True) 
+    rmse, r2 = select_model.accuracy() 
+    rmse_min.append(rmse)
+    
+fig = plt.figure(1)
+plt.scatter(range(2,7), rmse_min)
+"""
+
+
+    
+
+ 
+     
+    
+   
         
