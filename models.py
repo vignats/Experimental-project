@@ -163,26 +163,26 @@ class Model():
             return min(rmse), r2_score(y_test, y_pred)
 
 
-normalize = invert = [False, True]
-split_type = ['classical', 'tscv']
-acc = pd.DataFrame(columns=['Cross validation', 'Normalize', 'Invert', 'RMSE', 'R2'])
+# normalize = invert = [False, True]
+# split_type = ['classical', 'tscv']
+# acc = pd.DataFrame(columns=['Cross validation', 'Normalize', 'Invert', 'RMSE', 'R2'])
 
-model = LinearRegression() 
-for split in split_type :
-    for norm in normalize :
-        for inv in invert : 
-            select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, 
-                                 invert = inv,
-                                 normalize = norm)
-            rmse, r2= select_model.accuracy(split_type = split)
+# model = LinearRegression() 
+# for split in split_type :
+#     for norm in normalize :
+#         for inv in invert : 
+#             select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, 
+#                                  invert = inv,
+#                                  normalize = norm)
+#             rmse, r2= select_model.accuracy(split_type = split)
             
-            acc = acc.append({'Cross validation' : split,
-                                    'Normalize': norm,
-                                    'Invert': inv,
-                                    'RMSE': rmse,
-                                    'R2' : r2}, ignore_index=True)
+#             acc = acc.append({'Cross validation' : split,
+#                                     'Normalize': norm,
+#                                     'Invert': inv,
+#                                     'RMSE': rmse,
+#                                     'R2' : r2}, ignore_index=True)
             
-acc.to_excel("accuracy.xlsx")
+# acc.to_excel("accuracy.xlsx")
          
 """
 ## Linear regression 

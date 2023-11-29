@@ -24,6 +24,8 @@ def interpol(df, name_col):
    return continuous_values 
 
 if __name__ == '__main__' :
+    
+    
  df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
  name_col ='wrist@(9mm,809nm)_filtered_pat_bottomTI'
  mat = interpol(df,name_col)
@@ -34,12 +36,12 @@ if __name__ == '__main__' :
  
  #Modelling phase :
 Scaler = StandardScaler()
-Scaler.fit_transform(X_raw)
+Scaler.fit_transform(X_invert)
 tscv = TimeSeriesSplit(n_splits=6)
-for train_index, test_index in tscv.split(X_raw,y):
+for train_index, test_index in tscv.split(X_invert,y):
     X_train, X_test = X_invert[train_index], X_invert[test_index]
     y_train, y_test = y[train_index], y[test_index]
-    SV = SVR(kernel='rbf')
-    SV.fit(X_train, y_train)
-    y_pred = SV.predict(X_test)
-    print("Accuracy for Testing data : ", SV.score(X_test, y_test), "RMSE:", mean_squared_error(y_test, y_pred,squared=False))
+    train_regr = MLPRegressor(activation = "tanh", solver="lbfgs", max_iter=100000)
+    train_regr.fit(X_train,y_train)
+    y_pred = train_regr.predict(X_test)
+    print("Accuracy for Testing data : ", train_regr.score(X_test, y_test), "RMSE:", mean_squared_error(y_test, y_pred,squared=False))

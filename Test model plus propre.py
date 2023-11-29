@@ -45,8 +45,8 @@ X_train, X_test, Y_train, Y_test = train_test_split(X_invert,Y, test_size=0.3)
 # Scaler.transform(X_test)
 model.fit(X_train, Y_train)
 Y_pred = model.predict(X_test)
-
 print("Accuracy for Testing data : ", model.score(X_test, Y_test), "RMSE:", mean_squared_error(Y_test, Y_pred,squared=False))
+
 # Training + testing and Accuracy 
 for train_index, test_index in tscv.split(X_invert,Y):
     X_train, X_test = X_invert[train_index], X_invert[test_index]

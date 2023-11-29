@@ -31,6 +31,7 @@ def Detrend(mat):
     return Diff
 
 if __name__ == '__main__' :
+    
  df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
  name_col ='wrist@(9mm,809nm)_filtered_pat_bottomTI'
  mat = interpol(df,name_col)
