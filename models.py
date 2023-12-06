@@ -14,8 +14,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
-from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
+
 
 class Preprocess():
     def __init__(self, path):
@@ -32,13 +32,14 @@ class Preprocess():
         self.df.insert(loc=3, column='pat_filtred_continuous', value=continuous_values)       
     
     def outliers(self):
-        # Identify outliers of column by computing z-score
-        z = np.abs(stats.zscore(self.df['wrist@(9mm,809nm)_filtered_pat_bottomTI']))
+        df_outlier = self.df.copy()
+        df_outlier['wrist@(9mm,809nm)_filtered_pat_bottomTI'] = df_outlier['wrist@(9mm,809nm)_filtered_pat_bottomTI'].fillna(df_outlier['wrist@(9mm,809nm)_filtered_pat_bottomTI'].mean())
         
-        # Identify outliers as pat_filtered with a z-score greater than 3
+        # Commpute the z-statistic
+        z = np.abs(stats.zscore(df_outlier['wrist@(9mm,809nm)_filtered_pat_bottomTI']))
+        # Identify outliers as the pat_filtered with a z-score greater than 3
         threshold = 3
-        outliers = self.df['wrist@(9mm,809nm)_filtered_pat_bottomTI'][z > threshold]
-        
+        outliers = df_outlier['wrist@(9mm,809nm)_filtered_pat_bottomTI'][z > threshold]    
         # Remove outliers
         self.df = self.df.drop(outliers.index)
           
@@ -47,7 +48,7 @@ class Preprocess():
         Process the data with multiple possibilities
         interpolation : interpolate the missing PAT data using scipy function
         invert : the correlation between PAT and BP is negative so we invert the PAT
-        normalize : normalization of the PAT data 
+        outlier : remove the outliered values of the PAT data 
         """
         
         if outlier == True :
@@ -94,7 +95,7 @@ class Model():
               
         return X_train, X_test
         
-    def data_splitting(self, test_size = 0.3, random_state = 42):
+    def data_splitting(self, test_size = 0.3, random_state =42):
         if isinstance(self.mod, PolynomialFeatures):
             self.X = self.mod.fit_transform(self.X)
             self.mod = LinearRegression() #After adding polynomial feature, the prediction is done using a linear regressor.
@@ -109,11 +110,13 @@ class Model():
         
     def n_split(self):
         rmse_n = []
-        for n in range (2,20):
+        for n in range (2,10):
             rmse_n.append(self.accuracy(split_type = 'tscv', n_splits=n)[0])
+        plt.plot(range(2,10), rmse_n)
+        
         return rmse_n.index(min(rmse_n))       
 
-    def accuracy(self, split_type = 'classical', n_splits=4):
+    def accuracy(self, split_type = 'classical', n_splits=6):
         """
         Parameters
         ----------
@@ -140,11 +143,14 @@ class Model():
             self.mod.fit(X_train, y_train)
             
             y_pred = self.mod.predict(X_test)
+            self.y_pred = y_pred
+            self.y_test = y_test 
             return mean_squared_error(y_test, y_pred, squared = False), r2_score(y_test, y_pred)
         
         if split_type == 'tscv':
             tscv = TimeSeriesSplit(n_splits)
-            rmse = []          
+            rmse = 1000 
+            r2 = 0
             for train_index, test_index in tscv.split(self.X, self.y):
                 if isinstance(self.mod, PolynomialFeatures):
                     self.X = self.mod.fit_transform(self.X)
@@ -156,79 +162,14 @@ class Model():
                 if self.normalize == True :
                     X_train, X_test = self.normalization(X_train, X_test)
                 
-                self.mod.fit(X_train, y_train)
+                self.mod.fit(X_train, y_train)               
                 
                 y_pred = self.mod.predict(X_test)
-                rmse.append(mean_squared_error(y_test, y_pred, squared = False))
-            return min(rmse), r2_score(y_test, y_pred)
-
-
-normalize = invert = [False, True]
-split_type = ['classical', 'tscv']
-acc = pd.DataFrame(columns=['Cross validation', 'Normalize', 'Invert', 'RMSE', 'R2'])
-
-model = LinearRegression() 
-for split in split_type :
-    for norm in normalize :
-        for inv in invert : 
-            select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, 
-                                 invert = inv,
-                                 normalize = norm)
-            rmse, r2= select_model.accuracy(split_type = split)
-            
-            acc = acc.append({'Cross validation' : split,
-                                    'Normalize': norm,
-                                    'Invert': inv,
-                                    'RMSE': rmse,
-                                    'R2' : r2}, ignore_index=True)
-            
-acc.to_excel("accuracy.xlsx")
-         
-"""
-## Linear regression 
-
-model = LinearRegression()               
-
-## Polynomial regression
-model = PolynomialFeatures(degree=3, include_bias=False)  
-
-## Normalization
-select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, interpolation = False, 
-                     invert = False)
-
-## Interpolation
-select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, invert = False, 
-                     normalize = False)
-## Invert 
-select_model = Model('03-Oct-2023_patAnalysis_2.csv', model,interpolation = False,
-                     normalize = False)
-
-## All     
-select_model = Model('03-Oct-2023_patAnalysis_2.csv')
-
- 
-rmse, r2 = select_model.accuracy() 
-"""
-
-"""
-## Number of features in Polynomial regression
-rmse_min = []
-for d in range (2,7):    
-    model =  PolynomialFeatures(degree=d, include_bias=False)      
-    select_model = Model('03-Oct-2023_patAnalysis_2.csv', model, interpolation = False, 
-            invert = False, normalize = True) 
-    rmse, r2 = select_model.accuracy() 
-    rmse_min.append(rmse)
-    
-fig = plt.figure(1)
-plt.scatter(range(2,7), rmse_min)
-"""
-
-
-    
-
- 
-     
-    
-   
-        
+                
+                if mean_squared_error(y_test, y_pred, squared = False) < rmse:
+                    rmse = mean_squared_error(y_test, y_pred, squared = False)
+                    r2 = r2_score(y_test, y_pred)
+                    self.y_pred = y_pred
+                    self.y_test = y_test
+                    
+            return rmse, r2
