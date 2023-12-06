@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
 from sklearn.svm import SVR
 from sklearn.model_selection import cross_val_score
+import matplotlib.pyplot as plt
 
 def interpol(df, name_col):
    time = df['wrist@(9mm,809nm)_delay_s']
@@ -35,13 +36,22 @@ if __name__ == '__main__' :
  y = df['blood pressure_systolic'].dropna().to_numpy()
  
  #Modelling phase :
-Scaler = StandardScaler()
-Scaler.fit_transform(X_invert)
+
 tscv = TimeSeriesSplit(n_splits=6)
 for train_index, test_index in tscv.split(X_invert,y):
     X_train, X_test = X_invert[train_index], X_invert[test_index]
     y_train, y_test = y[train_index], y[test_index]
-    train_regr = MLPRegressor(activation = "tanh", solver="lbfgs", max_iter=100000)
+    Scaler = StandardScaler()
+    Scaler.fit_transform(X_train)
+    Scaler.transform(X_test)
+    train_regr = SVR(gamma='auto', C=0.1)
     train_regr.fit(X_train,y_train)
     y_pred = train_regr.predict(X_test)
     print("Accuracy for Testing data : ", train_regr.score(X_test, y_test), "RMSE:", mean_squared_error(y_test, y_pred,squared=False))
+
+plt.figure()
+
+plt.plot(range(len(y_test)), y_test, label='Test', color='red' )
+plt.plot(range(len(y_test)), y_pred, label='Test pred', color='green' )
+plt.legend()
+plt.show

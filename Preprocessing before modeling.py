@@ -35,8 +35,7 @@ if __name__ == '__main__' :
  df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
  name_col ='wrist@(9mm,809nm)_filtered_pat_bottomTI'
  mat = interpol(df,name_col)
- Diff = Detrend(mat)
- X_Stationnary = Diff[23:2325]
+
  X_raw = mat[23:2325]
  y = df['blood pressure_systolic'].dropna().to_numpy()
  

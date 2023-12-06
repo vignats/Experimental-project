@@ -92,7 +92,7 @@ model = tf.keras.Sequential([
 model.compile(optimizer='SGD', loss='mean_squared_error', metrics=['RootMeanSquaredError'])
 
 # Train the model
-history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test), verbose=1)
+history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test), verbose=1)
 
 # Model Evaluation
 train_predictions = model.predict(X_train)
@@ -134,6 +134,12 @@ plt.plot(range(len(train)+1+seq_length,len(test)+len(train)+1,1), test_predictio
 plt.plot(range(len(test)+len(train)+1,len(test)+len(train)+(len(future_predictions_denormalized)+1),1), future_predictions_denormalized[:,1], label='Future Predictions', color='green')
 plt.legend()
 plt.ylabel('Blood Pressure')
+plt.show()
+
+plt.figure()
+plt.plot(range(len(test)), test['blood pressure_systolic'], label='Test', color ='red' )
+plt.plot(range(len(test_predictions_denormalized)), test_predictions_denormalized[:,1], label='Test Predictions', color ='green' )
+plt.legend()
 plt.show()
 #Plotting performance curves
 summarize_diagnostics(history)
