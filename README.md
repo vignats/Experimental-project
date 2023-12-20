@@ -54,7 +54,6 @@ It allow to test the model on new datasets.
 
 ## Outputs of the two scripts
 - Plot of comparaison between predicted BP and true BP.
-- RMSE evolution between test and train sets.
 - Visualization of training set, testing set and predict one. 
-
+- RMSE evolution between test and train sets with `summarize_diagnostics`.
 
