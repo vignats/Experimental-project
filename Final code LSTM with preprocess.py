@@ -13,8 +13,35 @@ from math import sqrt
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from models import Preprocess
-from scipy import stats
-from scipy.interpolate import interp1d
+
+import time
+'''
+##INFORMATIONS
+
+This program is a standalone program for training and testing on an LSTM model and use this trained model on other datasets
+It mainly requires the packages : Pandas, Tensorflow, numpy, sckikit-learn, math and  matplotlib
+
+INPUT:
+The dataset files are supposed to be in the same folder as the program and be csv or xlsx files.
+Update the file location of the dataset file before use
+
+OUTPUT : 
+Model metrics, RMSE, and comparison graphs between predicted and expected values
+
+General description : 
+The preprocessing is done in class Preprocess, refer to its documentation for further information
+
+After the preprocessing, the data is cut into 2 sets and normalized and then cut into smaller sequences whose size can be defined by the user
+These sequence act like moving windows on the training and testing set allowing for a model training that take into account the time dependency of the data
+
+Afterwards, predictions are made from the testing set and the data from another patient. 
+metrics and graphs are obtained from these predictions after some post processing
+
+Possible issues :
+    - Size difference of the output values of the model depending on the sequence length chosen
+'''
+start = time.time()
+
 def summarize_diagnostics(history):
     #Allows to plot the RMSE evolution curve for the model as a function 
     #Change the variable "Validation_data" in model.compile for comparing other sets of data
@@ -22,16 +49,17 @@ def summarize_diagnostics(history):
     plt.title('Root Mean Square Error')
     plt.plot(history.history['root_mean_squared_error'], color='blue', label='train')
     plt.plot(history.history['val_root_mean_squared_error'], color='orange', label='test') 
+    plt.legend()
     plt.tight_layout()
     
 # Importing the data
 df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
 df = df.dropna(subset = ["blood pressure_systolic"])
 Pre = Preprocess('03-Oct-2023_patAnalysis_2.csv')
-# Feature Engineering done inside the class Preprocess
+#PREPROCESSING
 #Here there is outlier picking, interpolation and inversion of the Pat value
 X, y = Pre.process_data(interpolation=True, invert=True, outlier=True)
-
+#TRAINING THE MODEL
 # Train-Test Split
 train_size = int(len(X) * 0.7)
 X_train, X_test = X[0:train_size], X[train_size:]
@@ -73,7 +101,8 @@ train_predictions = model.predict(X_train2)
 test_predictions = model.predict(X_test2)
 test_predictions_stacked = np.column_stack((test_normalized[seq_length:, 0],test_predictions))
 
-# De-normalize predictions
+# #POST-PROCESSING 
+#De-normalize predictions
 test_predictions_denormalized = scaler.inverse_transform(test_predictions_stacked)
 train_rmse = sqrt(mean_squared_error(y_train2, train_predictions))
 test_rmse = sqrt(mean_squared_error(y_test2, test_predictions))
@@ -100,3 +129,5 @@ plt.legend()
 plt.show()
 #Plotting performance curves
 summarize_diagnostics(history)
+end = time.time()
+print(end - start)

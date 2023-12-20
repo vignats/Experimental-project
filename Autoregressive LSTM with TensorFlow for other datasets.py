@@ -3,6 +3,8 @@
 Created on Wed Nov 22 14:53:36 2023
 
 @author: tanne
+
+
 """
 
 import pandas as pd
@@ -15,6 +17,38 @@ import matplotlib.pyplot as plt
 from models import Preprocess
 from scipy import stats
 from scipy.interpolate import interp1d
+import time
+
+'''
+##INFORMATIONS
+
+This program is a standalone program for training and testing on an LSTM model and use this trained model on other datasets
+It mainly requires the packages : Pandas, Tensorflow, numpy, sckikit-learn, math, matplotlib and scipy
+
+INPUT:
+The dataset files are supposed to be in the same folder as the program and be csv or xlsx files.
+Update the file location of the dataset file before use
+
+OUTPUT : 
+Model metrics, RMSE, and comparison graphs between predicted and expected values
+
+General description : 
+The preprocessing is done exactly like in class Preprocess, refer to its documentation for further information
+
+After the preprocessing, the data is cut into 2 sets and normalized and then cut into smaller sequences whose size can be defined by the user
+These sequence act like moving windows on the training and testing set allowing for a model training that take into account the time dependency of the data
+
+Afterwards, predictions are made from the testing set and the data from another patient. 
+metrics and graphs are obtained from these predictions after some post processing
+
+Possible issues :
+    - Size difference of the output values of the model depending on the sequence length chosen
+    - The future predictions feature is not accurate and output are often irrealistic.
+
+
+'''
+start = time.time()
+
 
 def summarize_diagnostics(history):
     #Allows to plot the RMSE evolution curve for the model as a function 
@@ -36,6 +70,8 @@ df = df.dropna(subset = ["blood pressure_systolic"])
 #Importing a new testing set 
 df2 = pd.read_excel('05-Dec-2023_patAnalysis_5.xlsx') # Be careful of the extension of the file, here the data provided was stored in a xlsx file
 df2 = df2.dropna(subset = ["blood pressure_systolic"]) # Be careful of the label corresponding to the systolic BP, it has to be exactly "blood pressure_systolic" for the scaler to work
+
+### PREPROCESSING
 # Feature Engineering
 #This process is the same as the one in the class Preprocess but with this model we needed to keep the data as pandas dataframe
 #Outliers removal 
@@ -73,6 +109,7 @@ continuous_values = interp_func(time_continuous)
 df2.insert(loc=3, column='pat_filtred_continuous', value=continuous_values)
 
 
+#TRAINING THE MODEL
 # Train-Test Split
 train_size = int(len(df['pat_filtred_continuous']) * 0.9) # Change the value for bigger training set, Questions should be asked about how to use multiple patient data for training.
 train, test = df[0:train_size], df[train_size:]
@@ -119,7 +156,7 @@ test_rmse = sqrt(mean_squared_error(y_test, test_predictions))
 print("Training RMSE :", train_rmse, 'Testing RMSE : ', test_rmse)
 
 
-# Prediction
+# BP PREDICTION # Not really working (really random output)
 future_steps = 5  # Adjust as needed
 future_data = test_normalized[-seq_length:].reshape((1, 1, 2))  # Assuming 2 features (PAT and BloodPressure)
 future_predictions = []
@@ -133,7 +170,7 @@ for _ in range(future_steps):
 
     future_predictions.append(prediction)
 
-      
+ ##POST-PROCESSING     
 # # Concatenate 'PAT' values with future predictions for inverse transform
 future_predictions_with_pat = np.column_stack((future_data[0, 0:future_steps, 0], np.array(future_predictions)))
 test_predictions_stacked = np.column_stack((test_normalized[seq_length:, 0],test_predictions))
@@ -144,7 +181,8 @@ test_predictions_denormalized = scaler.inverse_transform(test_predictions_stacke
 test_predictions2_denormalized = scaler.inverse_transform(test_predictions2_stacked)
 print('Predicted values for the next', future_steps ,'th step :', future_predictions_denormalized[:,1])
 
-# Plotting data
+# PLOTTING THE RESULTS
+#Full Training BP + Testing BP + Predicted BP + Future Predictions vs Index of values (Time index)
 plt.plot(range(0,len(train),1), train['blood pressure_systolic'], label='Train')
 plt.plot(range(len(train)+1,len(test)+len(train)+1,1), test['blood pressure_systolic'], label='Test')
 plt.plot(range(len(train)+1+seq_length,len(test)+len(train)+1,1), test_predictions_denormalized[:,1], label='Test Predictions', color='red')
@@ -152,7 +190,7 @@ plt.plot(range(len(test)+len(train)+1,len(test)+len(train)+(len(future_predictio
 plt.legend()
 plt.ylabel('Blood Pressure')
 plt.show()
-
+#Comparison between predicted BP values with target values as a function of time
 plt.figure()
 plt.plot(df['wrist@(9mm,809nm)_delay_s'][train_size:], test['blood pressure_systolic'], label='testing set', color ='red' )
 plt.plot(df_outlier['wrist@(9mm,809nm)_delay_s'][train_size+9:], test_predictions_denormalized[:,1], label='testing predictions', color ='green' )
@@ -160,7 +198,7 @@ plt.xlabel("Delay(s)")
 plt.ylabel('Systolic Blood Pressure (mmHg)')
 plt.legend()
 plt.show()
-
+#Comparison on new Data set
 plt.figure()
 plt.plot(df2['wrist@(9mm,812nm)_delay_s'], Test2['blood pressure_systolic'], label='testing set', color ='red' )
 plt.plot(df2['wrist@(9mm,812nm)_delay_s'][1:], test_predictions2_denormalized[:,1], label='testing predictions', color ='green' )
@@ -170,3 +208,6 @@ plt.legend()
 plt.show()
 #Plotting performance curves
 summarize_diagnostics(history)
+
+end = time.time()
+print("Time elasped :", end - start, "seconds")
