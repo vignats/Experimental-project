@@ -45,14 +45,14 @@ Refer to the `models.py` module for detailed implementations of the `Preprocess`
 
 # LSTM modeling
 
-## Modelling on one dataset
+### Modelling on one dataset
 The script `Final-code-LSTM-with-preprocess.py`use the `Preprocess` to do the preprocessing of the data.
 
-## Modelling on supplementary datasets 
+### Modelling on supplementary datasets 
 The script `Autoregressive-LSTM-with-TensorFlow-for-other-datasets.py` isn't linked to other classes.
 It allow to test the model on new datasets.
 
-### Outputs of the two scripts
+## Outputs of the two scripts
 - Plot of comparaison between predicted BP and true BP.
 - RMSE evolution between test and train sets.
 - Visualization of training set, testing set and predict one. 
