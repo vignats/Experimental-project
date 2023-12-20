@@ -15,6 +15,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
 from sklearn.svm import SVR
 from sklearn.model_selection import cross_val_score
+import matplotlib.pyplot as plt
+import time
 
 def interpol(df, name_col):
    time = df['wrist@(9mm,809nm)_delay_s']
@@ -24,6 +26,11 @@ def interpol(df, name_col):
    return continuous_values 
 
 if __name__ == '__main__' :
+    
+   
+
+ start = time.time()
+
  df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
  name_col ='wrist@(9mm,809nm)_filtered_pat_bottomTI'
  mat = interpol(df,name_col)
@@ -33,13 +40,28 @@ if __name__ == '__main__' :
  y = df['blood pressure_systolic'].dropna().to_numpy()
  
  #Modelling phase :
-Scaler = StandardScaler()
-Scaler.fit_transform(X_raw)
-tscv = TimeSeriesSplit(n_splits=6)
-for train_index, test_index in tscv.split(X_raw,y):
+
+tscv = TimeSeriesSplit(n_splits=4)
+for train_index, test_index in tscv.split(X_invert,y):
     X_train, X_test = X_invert[train_index], X_invert[test_index]
     y_train, y_test = y[train_index], y[test_index]
-    SV = SVR(kernel='rbf')
-    SV.fit(X_train, y_train)
-    y_pred = SV.predict(X_test)
-    print("Accuracy for Testing data : ", SV.score(X_test, y_test), "RMSE:", mean_squared_error(y_test, y_pred,squared=False))
+    Scaler = StandardScaler()
+    Scaler.fit_transform(X_train)
+    Scaler.transform(X_test)
+    train_regr = MLPRegressor(activation='tanh',solver='adam', max_iter=10000)
+    train_regr.fit(X_train,y_train)
+    y_pred = train_regr.predict(X_test)
+    print("Accuracy for Testing data : ", train_regr.score(X_test, y_test), "RMSE:", mean_squared_error(y_test, y_pred,squared=False))
+
+plt.figure()
+print(np.mean(y_test))
+print(np.mean(y_pred))
+
+plt.plot(range(len(y_test)), y_test, label='Test', color='red' )
+plt.plot(range(len(y_test)), y_pred, label='Test pred', color='green' )
+plt.xlabel("Index")
+plt.ylabel('Systolic Blood Pressure (mmHg)')
+plt.legend()
+plt.show()
+end = time.time()
+print(end - start)

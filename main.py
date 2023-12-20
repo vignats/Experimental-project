@@ -9,6 +9,10 @@ from models import *
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR 
 from sklearn.neural_network import MLPRegressor
+import tensorflow as tf
+
+
+
 
 path = '03-Oct-2023_patAnalysis_2.csv'
 normalize = invert = [False, True]
@@ -18,8 +22,13 @@ acc = pd.DataFrame(columns = ['Cross validation', 'Normalize', 'Invert', 'RMSE',
 #model = MLPRegressor(activation = "tanh", solver="lbfgs", max_iter=10000)
 #model = LinearRegression()
 #model = SVR(kernel = 'rbf')
-model = train_regr = MLPRegressor(activation = "tanh", solver="lbfgs", max_iter=100000)
+#model = train_regr = MLPRegressor(activation = "tanh", solver="lbfgs", max_iter=100000)
+model = model = tf.keras.Sequential([
+    tf.keras.layers.LSTM(25, activation="relu", input_shape=(X_train.shape[1], X_train.shape[2])),
+    tf.keras.layers.Dense(1)
+])
 
+model.compile(optimizer='SGD', loss='mean_squared_error', metrics=['RootMeanSquaredError'])
 select_model = Model(path, model, invert = False)
 rmse, r2= select_model.accuracy(split_type = 'tscv')
 

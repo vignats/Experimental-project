@@ -31,11 +31,11 @@ def Detrend(mat):
     return Diff
 
 if __name__ == '__main__' :
+    
  df = pd.read_csv('03-Oct-2023_patAnalysis_2.csv')
  name_col ='wrist@(9mm,809nm)_filtered_pat_bottomTI'
  mat = interpol(df,name_col)
- Diff = Detrend(mat)
- X_Stationnary = Diff[23:2325]
+
  X_raw = mat[23:2325]
  y = df['blood pressure_systolic'].dropna().to_numpy()
  
@@ -58,3 +58,9 @@ Ytest_pred_scale = SV2.predict(Xtest)
 
 print("Normal data", mean_squared_error(Ytest, Ytest_pred,squared=False), "R2 score : ", r2_score(Ytest, Ytest_pred))
 print("Scaled data", mean_squared_error(Ytest, Ytest_pred_scale,squared=False), "R2 score : ", r2_score(Ytest, Ytest_pred_scale))
+
+plt.figure()
+plt.plot(range(len(test)), test['blood pressure_systolic'], label='Test', color ='red' )
+plt.plot(range(len(test_predictions_denormalized)), test_predictions_denormalized[:,1], label='Test Predictions', color ='green' )
+plt.legend()
+plt.show()

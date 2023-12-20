@@ -165,7 +165,7 @@ class Model():
                 self.mod.fit(X_train, y_train)               
                 
                 y_pred = self.mod.predict(X_test)
-                
+              
                 if mean_squared_error(y_test, y_pred, squared = False) < rmse:
                     rmse = mean_squared_error(y_test, y_pred, squared = False)
                     r2 = r2_score(y_test, y_pred)
